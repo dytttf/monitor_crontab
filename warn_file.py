@@ -8,8 +8,12 @@ import time
 
 from crontab import CronTab
 
-import log
+try:
+    from Api import log
+except:
+    import log
 import report
+import db_sqlite
 
 
 class WarnFile(object):
@@ -66,7 +70,14 @@ class WarnFile(object):
                 warn_info = self.warn_module.execute()
                 if warn_info['status'] != 0:
                     warn_info.update({'filename':self.filename})
-                    report.send(warn_info)
+                    resp = report.send(warn_info)
+                    self.last_warning = time.time()
+                    data = {
+                        'st_mtime':self.st_mtime,
+                        'last_warning':self.last_warning,
+                        'update':1,
+                        }
+                    db_sqlite.upsert(data, self)
                 time.sleep(1)
             else:
                 time.sleep(.5)
