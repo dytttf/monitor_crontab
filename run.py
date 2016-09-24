@@ -1,6 +1,7 @@
 #coding:utf8
 import os
 import time
+import argparse
 import threading
 from  multiprocessing import Process, Event
 
@@ -20,7 +21,10 @@ warn_dir = os.path.join(cur_path, 'warn_dir')
 if not os.path.exists(warn_dir):
     os.mkdir(warn_dir)
 
-wait_join_timeout = 30
+# pid 文件
+pid_file = os.path.join(cur_path, 'pid')
+
+wait_join_timeout = 10
 
 
 def check_warn_dir_changes():
@@ -57,10 +61,64 @@ def check_warn_dir_changes():
     delete_files = db_sqlite.get_delete_files(all_files)
     return old_files, new_files, delete_files
 
-def main():
-    u'''主函数'''
+def create_pid():
+    u'''创建pid文件'''
+    if os.path.exists(pid_file):
+        return 0
+    pid = os.getpid()
+    try:
+        with open(pid_file, 'w') as f:
+            f.write(str(pid))
+    except Exception as e:
+        log.logger.exception(e)
+        return 0
+    return 1
+
+def check_stop():
+    u'''判断是否需要停止进程'''
+    if not os.path.exists(pid_file):
+        log.logger.error(u"pid文件不存在")
+        return 1
+    else:
+        cur_pid = os.getpid()
+        with open(pid_file) as f:
+            pid = int(f.read())
+        if cur_pid != pid:
+            log.logger.error(u"pid 不一致")
+            return 1
+    return 0
+
+def update_heart(p_name='main'):
+    u'''更新心跳'''
+    db_sqlite.update_heart(p_name)
+    return 1
+
+def check_heart_timeout(p_name="main"):
+    u'''监测心跳是否超时'''
+    last_time = db_sqlite.get_heart(p_name)
+    if time.time() - last_time > 3 * 60:
+        return 1
+    return 0
+
+def work():
+    u'''主进程执行函数'''
+    if not create_pid():
+        log.logger.error(u"pid 文件已存在或创建失败")
+        return 0
     process_dict = {}
     while 1:
+        if check_stop():
+            for filename in process_dict:
+                stopEvent = process_dict[filename]['event']
+                process = process_dict[filename]['process']
+                stopEvent.set()
+                #更新心跳
+                update_heart()
+                process.join(timeout=wait_join_timeout)
+            log.logger.info(u"进程停止")
+            return 1
+        #更新心跳
+        update_heart()
         need_stop_process_list = []
         # 监测预警脚本变化
         old_files, new_files, delete_files = check_warn_dir_changes()
@@ -94,6 +152,8 @@ def main():
         # 等待进程停止
         for process, filename in need_stop_process_list:
             process.join(timeout=wait_join_timeout)
+            #更新心跳
+            update_heart()
             del process
             log.logger.debug(u"stop process: %s"%filename)
 
@@ -106,7 +166,34 @@ def main():
             process.start()
             process_dict[filename] = {'event':stopEvent, 'process':process}
         time.sleep(10)
-    return
+    return 1
+
+def main():
+    u'''主函数'''
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--start", action="store_true", help="start process")
+    parser.add_argument("--stop", action="store_true", help="stop process")
+    parser.add_argument("--restart", action="store_true", help="restart process")
+    options = parser.parse_args()
+    if options.restart:
+        try:
+            os.remove(pid_file)
+        except:
+            pass
+        work()
+    elif options.start:
+        if check_heart_timeout():
+            work()
+        else:
+            log.logger.debug(u"进程已启动")
+    elif options.stop:
+        try:
+            os.remove(pid_file)
+        except:
+            pass
+    else:
+        parser.print_usage()
+    return 1
 
 if __name__ == '__main__':
     main()
