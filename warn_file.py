@@ -65,6 +65,7 @@ class WarnFile(object):
         cron = CronTab(self.warn_module.crontab)
         while 1:
             if stopEvent.is_set():
+                log.logger.info(u"收到停止信号 %s"%self.filename)
                 break
             if cron.next() < 1:
                 warn_info = self.warn_module.execute()
