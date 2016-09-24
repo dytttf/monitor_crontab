@@ -21,7 +21,10 @@ def create_table():
               `st_mtime` int(11),
               `last_warning` int(11)
             )'''
-    sqlite_cursor.execute(sql)
+    try:
+        sqlite_cursor.execute(sql)
+    except:
+        pass
     return 1
 
 def auto_commit(func):
@@ -89,6 +92,7 @@ def is_new_file(File):
     return result
 
 
+create_table()
 
 if __name__ == '__main__':
     #create_table()
