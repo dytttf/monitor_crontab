@@ -70,9 +70,15 @@ def main():
                 new_files.append(File)
 
         # 处理删除脚本
-        for File in delete_files:
-            log.logger.debug(u"delete %s"%File.filename)
-            db_sqlite.delete(File)
+        for filename in delete_files:
+            log.logger.debug(u"delete %s"%filename)
+            db_sqlite.delete(filename)
+            if filename in process_dict:
+                stopEvent = process_dict[filename]['event']
+                process = process_dict[filename]['process']
+                process_dict.pop(filename)
+                stopEvent.set()
+                need_stop_process_list.append((process, filename))
 
         # 处理有变化的脚本
         for File in new_files:
@@ -83,12 +89,13 @@ def main():
                 process = process_dict[filename]['process']
                 process_dict.pop(filename)
                 stopEvent.set()
-                need_stop_process_list.append(process)
+                need_stop_process_list.append((process, filename))
 
         # 等待进程停止
-        for process in need_stop_process_list:
+        for process, filename in need_stop_process_list:
             process.join(timeout=wait_join_timeout)
             del process
+            log.logger.debug(u"stop process: %s"%filename)
 
         # 处理新增脚本
         for File in new_files:
@@ -99,9 +106,7 @@ def main():
             process.start()
             process_dict[filename] = {'event':stopEvent, 'process':process}
         time.sleep(10)
-
     return
-
 
 if __name__ == '__main__':
     main()

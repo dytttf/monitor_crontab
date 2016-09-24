@@ -53,9 +53,9 @@ def upsert(data, File):
     return 1
 
 @auto_commit
-def delete(File):
+def delete(filename):
     u'''删除预警文件'''
-    sql = '''delete from `FILE_STATUS` where filename="%s"'''%File.filename
+    sql = '''delete from `FILE_STATUS` where filename="%s"'''%filename
     sqlite_cursor.execute(sql)
     return 1
 
@@ -67,7 +67,6 @@ def get_delete_files(Files):
     infos = sqlite_cursor.fetchall()
     old_files = [info[0] for info in infos]
     delete_files = set(old_files) - set(files)
-    delete_files = [File for File in Files if File.filename in delete_files]
     return list(delete_files)
 
 def is_new_file(File):
