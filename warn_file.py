@@ -60,6 +60,7 @@ class WarnFile(object):
         return 1
 
     def main(self, stopEvent):
+        log.logger.info(u"子进程启动: %s"%self.filename)
         self.init_warn_file()
 
         cron = CronTab(self.warn_module.crontab)
