@@ -3,6 +3,16 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# private
+Api/*
+warn_dir/*
+
+# config
+.conf
+
+# log
+log/
+
 # C extensions
 *.so
 
