@@ -5,7 +5,10 @@ import threading
 from  multiprocessing import Process, Event
 
 import db_sqlite
-import log
+try:
+    from Api import log
+except:
+    import log
 import warn_file
 
 
