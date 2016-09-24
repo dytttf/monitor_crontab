@@ -1,31 +1,18 @@
 #coding:utf8
 import os
+import time
 import sqlite3
+
+try:
+    from Api import log
+except:
+    import log
 
 cur_path = os.path.dirname(__file__)
 _db_file = os.path.join(cur_path, 'data.db')
 
 sqlite_conn = sqlite3.connect(_db_file)
 sqlite_cursor = sqlite_conn.cursor()
-
-def close():
-    u'''关闭数据库'''
-    sqlite_cursor.close()
-    sqlite_conn.close()
-    return
-
-def create_table():
-    u'''创建表'''
-    sql = '''create table `FILE_STATUS` (
-              `filename` varchar(255) primary key,
-              `st_mtime` int(11),
-              `last_warning` int(11)
-            )'''
-    try:
-        sqlite_cursor.execute(sql)
-    except:
-        pass
-    return 1
 
 def auto_commit(func):
     u'''commit 装饰器'''
@@ -34,6 +21,45 @@ def auto_commit(func):
         sqlite_conn.commit()
         return result
     return wrap
+
+def close():
+    u'''关闭数据库'''
+    sqlite_cursor.close()
+    sqlite_conn.close()
+    return
+
+@auto_commit
+def create_table():
+    u'''创建表 保存预警文件信息'''
+    sql = '''create table `FILE_STATUS` (
+              `filename` varchar(255) primary key,
+              `st_mtime` int(11),
+              `last_warning` int(11)
+            )'''
+    try:
+        sqlite_cursor.execute(sql)
+    except Exception as e:
+        if 'already exists' in str(e):
+            pass
+        else:
+            log.logger.debug(e)
+    return 1
+
+@auto_commit
+def create_table_process_info():
+    u'''创建表用来保存进程信息  主要用来监测心跳'''
+    sql = '''create table `PROCESS` (
+                `p_name` varchar(255),
+                `alive_time` float
+            )'''
+    try:
+        sqlite_cursor.execute(sql)
+    except Exception as e:
+        if 'already exists' in str(e):
+            pass
+        else:
+            log.logger.debug(e)
+    return 1
 
 @auto_commit
 def upsert(data, File):
@@ -90,8 +116,32 @@ def is_new_file(File):
             result.update({'status':0})
     return result
 
+def get_heart(p_name):
+    u'''获取心跳时间'''
+    sql = '''select `alive_time` from `PROCESS` where `p_name`="%s"'''%p_name
+    sqlite_cursor.execute(sql)
+    info = sqlite_cursor.fetchall()
+    return info[0][0] if info else 0
+
+@auto_commit
+def update_heart(p_name):
+    u'''更新心跳时间'''
+    insert_sql = '''insert into `PROCESS` (`p_name`, `alive_time`) values
+                        ("%s", %f)'''%(
+                        p_name, time.time()
+                        )
+    update_sql = '''update `PROCESS` set `alive_time`=%f
+                    where `p_name`="%s"'''%(
+                    time.time(), p_name
+                    )
+    try:
+        sqlite_cursor.execute(update_sql)
+    except:
+        sqlite_cursor.execute(insert_sql)
+    return 1
 
 create_table()
+create_table_process_info()
 
 if __name__ == '__main__':
     #create_table()
