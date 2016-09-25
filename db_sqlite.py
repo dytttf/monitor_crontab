@@ -50,7 +50,7 @@ def create_table_process_info():
     u'''创建表用来保存进程信息  主要用来监测心跳'''
     sql = '''create table `PROCESS` (
                 `p_name` varchar(255),
-                `alive_time` float
+                `alive_time` int(11)
             )'''
     try:
         sqlite_cursor.execute(sql)
