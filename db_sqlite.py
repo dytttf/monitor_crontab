@@ -49,7 +49,7 @@ def create_table():
 def create_table_process_info():
     u'''创建表用来保存进程信息  主要用来监测心跳'''
     sql = '''create table `PROCESS` (
-                `p_name` varchar(255),
+                `p_name` varchar(255) primary key,
                 `alive_time` int(11)
             )'''
     try:
@@ -127,17 +127,20 @@ def get_heart(p_name):
 def update_heart(p_name):
     u'''更新心跳时间'''
     insert_sql = '''insert into `PROCESS` (`p_name`, `alive_time`) values
-                        ("%s", %f)'''%(
+                        ("%s", %d)'''%(
                         p_name, time.time()
                         )
-    update_sql = '''update `PROCESS` set `alive_time`=%f
+    update_sql = '''update `PROCESS` set `alive_time`=%d
                     where `p_name`="%s"'''%(
                     time.time(), p_name
                     )
     try:
         sqlite_cursor.execute(update_sql)
+        resp = sqlite_cursor.rowcount
+        if resp < 1:
+            sqlite_cursor.execute(insert_sql)
     except:
-        sqlite_cursor.execute(insert_sql)
+        pass
     return 1
 
 create_table()
@@ -145,5 +148,7 @@ create_table_process_info()
 
 if __name__ == '__main__':
     #create_table()
+    #update_heart("main")
+    #print get_heart("main")
     pass
 
