@@ -59,7 +59,7 @@ class WarnFile(object):
         self.warn_module = module
         return 1
 
-    def main(self, stopEvent):
+    def _main(self, stopEvent):
         log.logger.info(u"子进程启动: %s"%self.filename)
         self.init_warn_file()
 
@@ -84,6 +84,20 @@ class WarnFile(object):
             else:
                 time.sleep(.5)
         return 1
+
+    def main(self, stopEvent):
+        resp = 1
+        while 1:
+            if stopEvent.is_set():
+                break
+            try:
+                resp = self._main(stopEvent)
+                break
+            except:
+                log.logger.exception(e)
+                time.sleep(60)
+        return resp
+
 
 
 if __name__ == '__main__':
