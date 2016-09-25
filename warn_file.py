@@ -36,7 +36,7 @@ class WarnFile(object):
     def init_file_info(self):
         u'''获取文件属性'''
         stat = os.stat(self.filename)
-        self.st_mtime = int()stat.st_mtime)
+        self.st_mtime = int(stat.st_mtime)
         return 1
 
     def init_warn_file(self):
