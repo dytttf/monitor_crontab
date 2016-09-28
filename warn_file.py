@@ -59,6 +59,18 @@ class WarnFile(object):
         self.warn_module = module
         return 1
 
+    def update_heart(self):
+        u"""更新心跳时间"""
+        db_sqlite.update_heart(self.filename)
+        return 1
+
+    def is_timeout(self, timeout=10*60):
+        u"""判断心跳是否超时"""
+        last_time = db_sqlite.get_heart(self.filename)
+        if time.time() - last_time > timeout:
+            return 1
+        return 0
+
     def _main(self, stopEvent):
         log.logger.info(u"子进程启动: %s"%self.filename)
         self.init_warn_file()
@@ -68,6 +80,10 @@ class WarnFile(object):
             if stopEvent.is_set():
                 log.logger.info(u"收到停止信号 %s"%self.filename)
                 break
+            try:
+                self.update_heart()
+            except Exception as e:
+                log.logger.error(u"更新心跳失败 %s"%e)
             if cron.next() < 1:
                 warn_info = self.warn_module.execute()
                 if warn_info['status'] != 0:

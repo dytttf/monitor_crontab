@@ -112,23 +112,25 @@ def work():
                 stopEvent = process_dict[filename]['event']
                 process = process_dict[filename]['process']
                 stopEvent.set()
-                #更新心跳
+                # 更新心跳
                 update_heart()
                 process.join(timeout=wait_join_timeout)
             log.logger.info(u"进程停止")
             return 1
-        #更新心跳
+        # 更新心跳
         update_heart()
         need_stop_process_list = []
         # 监测预警脚本变化
         old_files, new_files, delete_files = check_warn_dir_changes()
-        # 处理已经存在的脚本
+        # 处理已经存在的脚本 主要为了在重启的时候重启
         for File in old_files:
             if File.filename not in process_dict:
                 new_files.append(File)
 
         # 处理删除脚本
         for filename in delete_files:
+            # 更新心跳
+            update_heart()
             log.logger.debug(u"delete %s"%filename)
             db_sqlite.delete(filename)
             if filename in process_dict:
@@ -138,8 +140,17 @@ def work():
                 stopEvent.set()
                 need_stop_process_list.append((process, filename))
 
+        # 处理超时脚本
+        for filename in process_dict:
+            File = process_dict[filename]['File']
+            if File.is_timeout():
+                log.logger.error(u"file: %s timeout!!!"%filename)
+                new_files.append(File)
+
         # 处理有变化的脚本
         for File in new_files:
+            # 更新心跳
+            update_heart()
             filename = File.filename
             if filename in process_dict:
                 log.logger.debug(u"change %s"%filename)
@@ -152,7 +163,7 @@ def work():
         # 等待进程停止
         for process, filename in need_stop_process_list:
             process.join(timeout=wait_join_timeout)
-            #更新心跳
+            # 更新心跳
             update_heart()
             del process
             log.logger.debug(u"stop process: %s"%filename)
@@ -164,7 +175,7 @@ def work():
             stopEvent = Event()
             process = Process(target=File.main, args=(stopEvent,))
             process.start()
-            process_dict[filename] = {'event':stopEvent, 'process':process}
+            process_dict[filename] = {'event':stopEvent, 'process':process, 'File':File}
         time.sleep(10)
     return 1
 
