@@ -109,7 +109,7 @@ class WarnFile(object):
             try:
                 resp = self._main(stopEvent)
                 break
-            except:
+            except Exception as e:
                 log.logger.exception(e)
                 time.sleep(60)
         return resp
