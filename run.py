@@ -1,9 +1,9 @@
-#coding:utf8
+# coding:utf8
 import os
 import time
 import argparse
 import threading
-from  multiprocessing import Process, Event
+from multiprocessing import Process, Event
 
 import db_sqlite
 try:
@@ -13,10 +13,10 @@ except:
 import warn_file
 
 
-#获取当前文件路径
+# 获取当前文件路径
 cur_path = os.path.dirname(__file__)
 
-#预警脚本存放路径
+# 预警脚本存放路径
 warn_dir = os.path.join(cur_path, 'warn_dir')
 if not os.path.exists(warn_dir):
     os.mkdir(warn_dir)
@@ -46,7 +46,7 @@ def check_warn_dir_changes():
                 File = warn_file.WarnFile(abs_filename)
             except Exception as e:
                 log.logger.exception(e)
-                log.logger.error(u"初始化预警文件失败 file: %s error:%s"%(
+                log.logger.error(u"初始化预警文件失败 file: %s error:%s" % (
                                                         abs_filename, e
                                     ))
                 continue
@@ -61,6 +61,7 @@ def check_warn_dir_changes():
     delete_files = db_sqlite.get_delete_files(all_files)
     return old_files, new_files, delete_files
 
+
 def create_pid():
     u'''创建pid文件'''
     if os.path.exists(pid_file):
@@ -73,6 +74,7 @@ def create_pid():
         log.logger.exception(e)
         return 0
     return 1
+
 
 def check_stop():
     u'''判断是否需要停止进程'''
@@ -88,10 +90,12 @@ def check_stop():
             return 1
     return 0
 
+
 def update_heart(p_name='main'):
     u'''更新心跳'''
     db_sqlite.update_heart(p_name)
     return 1
+
 
 def check_heart_timeout(p_name="main"):
     u'''监测心跳是否超时'''
@@ -99,6 +103,7 @@ def check_heart_timeout(p_name="main"):
     if time.time() - last_time > 3 * 60:
         return 1
     return 0
+
 
 def work():
     u'''主进程执行函数'''
@@ -131,7 +136,7 @@ def work():
         for filename in delete_files:
             # 更新心跳
             update_heart()
-            log.logger.debug(u"delete %s"%filename)
+            log.logger.debug(u"delete %s" % filename)
             db_sqlite.delete(filename)
             if filename in process_dict:
                 stopEvent = process_dict[filename]['event']
@@ -144,7 +149,7 @@ def work():
         for filename in process_dict:
             File = process_dict[filename]['File']
             if File.is_timeout():
-                log.logger.error(u"file: %s timeout!!!"%filename)
+                log.logger.error(u"file: %s timeout!!!" % filename)
                 new_files.append(File)
 
         # 处理有变化的脚本
@@ -153,7 +158,7 @@ def work():
             update_heart()
             filename = File.filename
             if filename in process_dict:
-                log.logger.debug(u"change %s"%filename)
+                log.logger.debug(u"change %s" % filename)
                 stopEvent = process_dict[filename]['event']
                 process = process_dict[filename]['process']
                 process_dict.pop(filename)
@@ -166,25 +171,34 @@ def work():
             # 更新心跳
             update_heart()
             del process
-            log.logger.debug(u"stop process: %s"%filename)
+            log.logger.debug(u"stop process: %s" % filename)
 
         # 处理新增脚本
         for File in new_files:
             filename = File.filename
-            log.logger.debug(u'new %s'%filename)
+            log.logger.debug(u'new %s' % filename)
             stopEvent = Event()
             process = Process(target=File.main, args=(stopEvent,))
             process.start()
-            process_dict[filename] = {'event':stopEvent, 'process':process, 'File':File}
+            process_dict[filename] = {'event': stopEvent,
+                                      'process': process,
+                                      'File': File}
         time.sleep(10)
     return 1
+
 
 def main():
     u'''主函数'''
     parser = argparse.ArgumentParser()
-    parser.add_argument("--start", action="store_true", help="start process")
-    parser.add_argument("--stop", action="store_true", help="stop process")
-    parser.add_argument("--restart", action="store_true", help="restart process")
+    parser.add_argument("--start",
+                        action="store_true",
+                        help="start process")
+    parser.add_argument("--stop",
+                        action="store_true",
+                        help="stop process")
+    parser.add_argument("--restart",
+                        action="store_true",
+                        help="restart process")
     options = parser.parse_args()
     if options.restart:
         try:

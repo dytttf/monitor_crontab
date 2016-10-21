@@ -1,4 +1,4 @@
-#coding:utf8
+# coding:utf8
 '''
 预警脚本管理文件
 '''
@@ -48,13 +48,15 @@ class WarnFile(object):
             code = compile(code, '', 'exec')
         except Exception as e:
             log.logger.exception(e)
-            log.logger.error(u"compile file: %s error:%s"%(self.filename, e))
+            log.logger.error(u"compile file: %s error:%s" % (self.filename, e))
             return 0
         try:
-            exec code in  module.__dict__
+            exec code in module.__dict__
         except Exception as e:
             log.logger.exception(e)
-            log.logger.error(u"exec code file: %s error: %s"%(self.filename, e))
+            log.logger.error(u"exec code file: %s error: %s" % (
+                            self.filename, e)
+                            )
             return 0
         self.warn_module = module
         return 1
@@ -72,28 +74,28 @@ class WarnFile(object):
         return 0
 
     def _main(self, stopEvent):
-        log.logger.info(u"子进程启动: %s"%self.filename)
+        log.logger.info(u"子进程启动: %s" % self.filename)
         self.init_warn_file()
 
         cron = CronTab(self.warn_module.crontab)
         while 1:
             if stopEvent.is_set():
-                log.logger.info(u"收到停止信号 %s"%self.filename)
+                log.logger.info(u"收到停止信号 %s" % self.filename)
                 break
             try:
                 self.update_heart()
             except Exception as e:
-                log.logger.error(u"更新心跳失败 %s"%e)
+                log.logger.error(u"更新心跳失败 %s" % e)
             if cron.next() < 1:
                 warn_info = self.warn_module.execute()
                 if warn_info['status'] != 0:
-                    warn_info.update({'filename':self.filename})
+                    warn_info.update({'filename': self.filename})
                     resp = report.send(warn_info)
                     self.last_warning = time.time()
                     data = {
-                        'st_mtime':self.st_mtime,
-                        'last_warning':self.last_warning,
-                        'update':1,
+                        'st_mtime': self.st_mtime,
+                        'last_warning': self.last_warning,
+                        'update': 1,
                         }
                     db_sqlite.upsert(data, self)
                 time.sleep(1)
@@ -113,8 +115,5 @@ class WarnFile(object):
                 log.logger.exception(e)
                 time.sleep(60)
         return resp
-
-
-
 if __name__ == '__main__':
     pass
