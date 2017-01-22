@@ -104,6 +104,14 @@ def check_heart_timeout(p_name="main"):
         return 1
     return 0
 
+def kill_all():
+    pid = str(os.getpid())
+    exists_python_process_pids = os.popen("ps -ef| grep python | awk '{print $2}' | xargs").read().split()
+    for e_pid in exists_python_process_pids:
+        if e_pid != pid:
+            os.system("kill -9 %s"%e_pid)
+    return 1
+
 
 def work():
     u'''主进程执行函数'''
@@ -205,6 +213,7 @@ def main():
             os.remove(pid_file)
         except:
             pass
+        kill_all()
         work()
     elif options.start:
         if check_heart_timeout():

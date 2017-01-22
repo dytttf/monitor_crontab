@@ -16,7 +16,16 @@
 * 监测心跳
 ##### 使用
 ```
+#正常启动
 $ python run.py --start &
+```
+```
+#正常停止
+$ python run.py --stop
+```
+```
+#强制重启 kill旧进程
+$ python run.py --restart &
 ```
 ##### 配合定时任务实现自动重启
 ```
