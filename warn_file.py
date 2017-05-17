@@ -86,7 +86,7 @@ class WarnFile(object):
                 self.update_heart()
             except Exception as e:
                 log.logger.error(u"更新心跳失败 %s" % e)
-            if cron.next() < 1:
+            if cron.next(default_utc=False) < 1:
                 warn_info = self.warn_module.execute()
                 if warn_info['status'] != 0:
                     warn_info.update({'filename': self.filename})
