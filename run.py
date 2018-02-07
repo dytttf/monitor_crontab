@@ -14,7 +14,7 @@ import warn_file
 
 
 # 获取当前文件路径
-cur_path = os.path.dirname(__file__)
+cur_path = os.path.abspath(os.path.dirname(__file__))
 
 # 预警脚本存放路径
 warn_dir = os.path.join(cur_path, 'warn_dir')

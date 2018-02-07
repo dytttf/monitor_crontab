@@ -8,7 +8,7 @@ try:
 except:
     import log
 
-cur_path = os.path.dirname(__file__)
+cur_path = os.path.abspath(os.path.dirname(__file__))
 _db_file = os.path.join(cur_path, 'data.db')
 
 sqlite_conn = sqlite3.connect(_db_file)
